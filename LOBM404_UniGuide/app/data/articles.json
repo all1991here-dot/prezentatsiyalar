@@ -1,0 +1,50 @@
+[
+  {
+    "id": "kutubxona",
+    "title": "Kutubxonadan qanday foydalanaman?",
+    "category": "Ta’lim",
+    "summary": "Kitob izlash, o‘quv zalidan foydalanish va manbani qaytarishning oddiy tartibi.",
+    "body": "Avval kutubxona katalogidan mavzu yoki kitob nomi bo‘yicha qidiring. Topilgan manbaning joylashuvini kutubxonachi bilan aniqlashtiring. Kitobni olish va qaytarish muddatini qayd eting. Elektron resurslar mavjud bo‘lsa, universitetning rasmiy ko‘rsatmalariga amal qiling. Bu misol o‘quv maqsadida tuzilgan; haqiqiy ish vaqti va tartibni o‘z universitetingizdan tekshiring.",
+    "checklist": ["Katalogdan manbani toping", "Olish va qaytarish tartibini aniqlang", "Foydalangan manbaga havola bering"]
+  },
+  {
+    "id": "lms",
+    "title": "LMS: fan materiallari va topshiriqlar",
+    "category": "Ta’lim",
+    "summary": "Ta’lim platformasiga xavfsiz kirish va topshiriq holatini tekshirish.",
+    "body": "LMS — dars materiallari, topshiriqlar va e’lonlar joylashadigan ta’lim platformasi. Universitet bergan rasmiy manzil orqali kiring. Fan sahifasidan topshiriq sharti, muddati va kerakli fayl turini o‘qing. Yuborgandan keyin tasdiq yoki topshiriq holatini tekshiring. Hisob parolini hech kimga yubormang. Ushbu namuna haqiqiy universitet xizmatini almashtirmaydi.",
+    "checklist": ["Rasmiy LMS manzilini tekshiring", "Topshiriq muddati va mezonini o‘qing", "Yuborilgan fayl holatini tekshiring"]
+  },
+  {
+    "id": "dars-jadvali",
+    "title": "Dars jadvalini tushunish",
+    "category": "Ta’lim",
+    "summary": "Fan, vaqt, auditoriya va yangilanishni bir joyda tekshirish odati.",
+    "body": "Jadvaldan avval guruh va hafta sanasini tekshiring. Keyin fan nomi, mashg‘ulot turi, boshlanish vaqti va auditoriyani ko‘ring. Onlayn dars bo‘lsa, havolani rasmiy kanal orqali oling. O‘zgarishlarni universitetning tasdiqlangan manbasidan tekshiring. Bir eski skrinshotni doimiy jadval deb qabul qilmang. Bu sahifadagi tartib faqat tushuntiruvchi namunadir.",
+    "checklist": ["Guruh va haftani tekshiring", "Vaqt hamda auditoriyani aniqlang", "Rasmiy yangilanishni kuzating"]
+  },
+  {
+    "id": "dekanat",
+    "title": "Dekanatga aniq murojaat yozish",
+    "category": "Xizmatlar",
+    "summary": "Savolni qisqa ifodalash, to‘g‘ri kanal tanlash va javobni kuzatish.",
+    "body": "Murojaatingizning maqsadini bitta jumlada yozing: qanday masala bo‘yicha qanday yordam kerak? Universitetning rasmiy qabul va aloqa kanalidan foydalaning. Kerakli hujjatlarni faqat vakolatli xodimga xavfsiz yo‘l bilan taqdim eting. Javob muddati bo‘lsa, uni qayd eting. UniGuide o‘quv ilovasiga pasport, telefon raqami yoki boshqa shaxsiy ma’lumot kiritmang.",
+    "checklist": ["Masalani aniq yozing", "Rasmiy murojaat kanalini tanlang", "Javob holatini odob bilan kuzating"]
+  },
+  {
+    "id": "xavfsizlik",
+    "title": "Raqamli xavfsizlikning besh odati",
+    "category": "Xavfsizlik",
+    "summary": "Kuchli parol, ikki bosqichli himoya va shubhali havolani tekshirish.",
+    "body": "Har bir muhim hisob uchun alohida kuchli paroldan foydalaning. Xizmat qo‘llasa, ikki bosqichli tasdiqlashni yoqing. Xabar shoshiltirsa ham havola manzilini tekshiring. Umumiy kompyuterdan chiqqanda hisobdan chiqishni unutmang. Qurilma va dasturlarni yangilab turing. Parol, bir martalik kod yoki tokenni loyiha hisobotiga ham, GitHub fayliga ham yozmang.",
+    "checklist": ["Alohida kuchli parol ishlating", "Ikki bosqichli himoyani yoqing", "Shubhali havolani ochishdan oldin tekshiring"]
+  },
+  {
+    "id": "klublar",
+    "title": "Talabalar klubiga qo‘shilish",
+    "category": "Kampus",
+    "summary": "Qiziqishga mos klubni topish va o‘qish bilan muvozanatni saqlash.",
+    "body": "Avval o‘zingizga qiziq bo‘lgan yo‘nalishni tanlang: dasturlash, sport, til yoki ijod. Rasmiy e’londan klub maqsadi, uchrashuv joyi va qatnashish tartibini o‘qing. Dastlabki uchrashuvda vazifalar va vaqt talabini aniqlashtiring. Shaxsiy ma’lumotni faqat ishonchli rasmiy kanalga bering. Bu sahifa biror mavjud klubga ro‘yxatdan o‘tkazmaydi; u o‘quv namunasidir.",
+    "checklist": ["Qiziqishingizga mos yo‘nalishni tanlang", "Uchrashuv shartlarini tekshiring", "Haftalik vaqtni rejalashtiring"]
+  }
+]

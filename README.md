@@ -1,5 +1,15 @@
 # Bulut texnologiyalari va servislar — BTST206
 
+## Yangi fan: Loyihalarni boshqarish — LOBM404
+
+**[15 laboratoriya uchun rasmli Word qo‘llanma — 86 sahifa](https://github.com/all1991here-dot/prezentatsiyalar/raw/refs/heads/main/LOBM404_UniGuide/Qollanma/LOBM404_15_laboratoriya_qollanma.docx)**
+
+Bitta **UniGuide** loyihasi,15 talaba shabloni,15 to‘ldirilgan namuna, ishlaydigan Python ilovasi va testlar: **[LOBM404_UniGuide papkasi](LOBM404_UniGuide/)**.
+
+**[Faqat LOBM404 loyiha materiallarini ZIP qilib olish](https://github.com/all1991here-dot/prezentatsiyalar/raw/refs/heads/main/LOBM404_Materiallar.zip)**
+
+---
+
 2027–2028 sillabusi asosida tayyorlangan 18 mavzu. **Har bir prezentatsiya alohida dizayn va uslubda qayta ishlangan. Ma’ruza nutqlari o‘zgartirilmagan.**
 
 ## Yuklab olish

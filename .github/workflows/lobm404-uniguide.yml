@@ -1,0 +1,38 @@
+name: LOBM404 UniGuide tekshiruvlari
+
+on:
+  push:
+    paths:
+      - 'LOBM404_UniGuide/**'
+      - '.github/workflows/lobm404-uniguide.yml'
+  pull_request:
+    paths:
+      - 'LOBM404_UniGuide/**'
+      - '.github/workflows/lobm404-uniguide.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    defaults:
+      run:
+        working-directory: LOBM404_UniGuide
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Ilova unit va HTTP testlari
+        run: python -m unittest discover -s app/tests -v
+      - name: Oqim hisobining testlari
+        run: python -m unittest discover -s scripts/tests -v
+      - name: Python sintaksisi
+        run: python -m compileall -q app scripts
+      - name: Loyiha artefaktlari
+        run: python scripts/check_project.py
+      - name: Namuna metrikalari
+        run: python scripts/metrics.py

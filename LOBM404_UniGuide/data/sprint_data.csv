@@ -1,0 +1,10 @@
+sprint,story_id,title,planned_points,status,completed_points
+S1,US01,Olti maqola royxati,3,done,3
+S1,US02,Turkum filtri,3,done,3
+S1,US03,Kichik ekranda korinish,2,incomplete,0
+S2,US04,Matn boyicha qidiruv,5,done,5
+S2,US05,Fikr shakli,3,done,3
+S2,US03,Kichik ekranda korinish,2,done,2
+S3,US06,Kiritma tekshiruvi va regressiya,3,done,3
+S3,US07,Reliz va topshirish,2,done,2
+S3,US08,Sevimlilar keyingi versiyaga,5,deferred,0

@@ -1,0 +1,11 @@
+id,article_id,title,queued,started,done
+C01,kutubxona,Kutubxona maqolasi,2026-09-01,2026-09-02,2026-09-04
+C02,lms,LMS maqolasi,2026-09-01,2026-09-03,2026-09-05
+C03,dars-jadvali,Jadval maqolasi,2026-09-02,2026-09-03,2026-09-07
+C04,dekanat,Dekanat maqolasi,2026-09-02,2026-09-05,2026-09-08
+C05,xavfsizlik,Xavfsizlik maqolasi,2026-09-03,2026-09-06,2026-09-09
+C06,klublar,Klublar maqolasi,2026-09-04,2026-09-08,2026-09-10
+C07,kutubxona,Manba tekshiruvini yangilash,2026-09-06,2026-09-09,
+C08,lms,Ekran tavsifini tekshirish,2026-09-07,2026-09-10,
+C09,dars-jadvali,Yangilanish qaydini yozish,2026-09-08,,
+C10,xavfsizlik,Ikki bosqichli himoya misoli,2026-09-09,2026-09-10,2026-09-11
