@@ -1,0 +1,35 @@
+BULUT TEXNOLOGIYALARI VA SERVISLAR — BTST206
+2027–2028 sillabusi asosida
+
+18 mavzu, har birida 13 slayd: jami 234 slayd.
+PPTX: tahrirlanadigan matnlar, shakllar va texnik sxemalar. Muqovadagi 3D rasm rastrli illustratsiya.
+Word: M01–M18 ma’ruza nutqi. Har bir bo‘lim tegishli slayd raqami bilan belgilangan.
+Qo‘shimcha DOCX: zamonaviy Word uchun asl tahrirlanadigan nusxalar.
+Barcha nutqlar bitta umumiy Word faylida ham jamlangan.
+
+Videodars formati: o‘qituvchi bayoni, interaktiv topshiriqlarsiz.
+Sillabusda har mavzu 2 akademik soat. Ushbu fayllar ixcham videoma’ruza bayonidir; matn 90 daqiqa uzluksiz o‘qish uchun sun’iy cho‘zilmagan.
+Taqdimotchi izoh, diagramma ko‘rsatish va bayon sur’atini mustaqil belgilaydi.
+
+Sillabus mazmuni o‘quv manbasi sifatida ishlatildi. Bu materiallarga rasmiy universitet tasdig‘i yoki imzosi qo‘yilmagan.
+Platforma nomlari sillabus bilan bog‘langan; xizmat narxlari va limitlari amaldagi hujjatlarda tekshiriladi.
+
+MUNDARIJA
+M01 — Bulutli hisoblash texnologiyalariga kirish
+M02 — Bulut arxitekturasi va masshtablanuvchi tizimlar
+M03 — Bulut xizmat modellari: IaaS, PaaS va SaaS
+M04 — Bulutlarni joylashtirish modellari
+M05 — Virtualizatsiya texnologiyalari
+M06 — Konteyner texnologiyalari
+M07 — Konteynerlarni orkestratsiya qilish
+M08 — Bulutli ma’lumotlarni saqlash texnologiyalari
+M09 — Bulutli ma’lumotlar bazalari va Big Data
+M10 — Bulutli tarmoq texnologiyalari
+M11 — Bulutli axborot xavfsizligi
+M12 — Amazon Web Services bulut platformasi
+M13 — Microsoft Azure bulut platformasi
+M14 — Google Cloud Platform bulut xizmatlari
+M15 — Serverless Computing va FaaS
+M16 — Bulut infratuzilmasini avtomatlashtirish va DevOps
+M17 — Monitoring, observability va optimallashtirish
+M18 — Bulut texnologiyalarining zamonaviy yo‘nalishlari
