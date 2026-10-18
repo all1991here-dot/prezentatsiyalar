@@ -1,0 +1,27 @@
+; EURUSD MicroSafe Pro v2.0 | conservative demo baseline, not optimized
+InpMagic=205020
+InpRiskPercent=0.5
+InpAllowRealAccount=false
+InpDailyLossPercent=2.0
+InpMaxConsecutiveLosses=3
+InpLossCooldownMinutes=60
+InpMaxSpreadPips=1.5
+InpMinATRPips=3.0
+InpMaxATRPips=25.0
+InpMinADX=20.0
+InpMinTrendGapATR=0.25
+InpStopATR=1.8
+InpRewardRisk=2.0
+InpBreakEvenR=1.0
+InpBreakEvenOffsetPips=0.2
+InpTrailStartR=1.5
+InpTrailATR=1.5
+InpFridayStopHour=16
+InpFridayCloseHour=20
+InpStartHour=7
+InpEndHour=21
+InpDeviationPoints=10
+InpMaxTickAgeSeconds=10
+InpReconnectQuietSeconds=60
+InpCostReservePercent=15.0
+InpFreeMarginReservePercent=20.0
