@@ -18,9 +18,9 @@ void Check(bool ok, const std::string &what) {
 }
 MSFeatures BuyFixture() {
     MSFeatures f{};
-    f.m15fast=100; f.m15slow=95; f.m15previous=99;
-    f.m5fast=100; f.m5slow=99; f.adx=22; f.diPlus=30; f.diMinus=15;
+    f.m5fast=100; f.m5slow=99; f.m5previous=99.5; f.adx=22; f.diPlus=30; f.diMinus=15;
     f.emaNow=100.2; f.emaPrevious=100; f.atr=1;
+    f.breakoutHigh=101.4; f.breakoutLow=98.6;
     f.signal={100,101.2,99.9,101.1};
     f.pullback={100.15,100.5,99.7,100.1};
     return f;
@@ -30,49 +30,98 @@ MSBar MirrorBar(const MSBar &b, double center) {
 }
 MSFeatures Mirror(const MSFeatures &f, double center=2000) {
     MSFeatures g=f;
-    g.m15fast=center-f.m15fast; g.m15slow=center-f.m15slow; g.m15previous=center-f.m15previous;
-    g.m5fast=center-f.m5fast; g.m5slow=center-f.m5slow;
+    g.m5fast=center-f.m5fast; g.m5slow=center-f.m5slow; g.m5previous=center-f.m5previous;
     g.emaNow=center-f.emaNow; g.emaPrevious=center-f.emaPrevious;
+    g.breakoutHigh=center-f.breakoutLow; g.breakoutLow=center-f.breakoutHigh;
     g.diPlus=f.diMinus; g.diMinus=f.diPlus;
     g.signal=MirrorBar(f.signal,center); g.pullback=MirrorBar(f.pullback,center);
     return g;
 }
 MSFeatures Transform(MSFeatures f, double scale, double offset) {
-    for (double *p : {&f.m15fast,&f.m15slow,&f.m15previous,&f.m5fast,&f.m5slow,&f.emaNow,&f.emaPrevious,
+    for (double *p : {&f.m5fast,&f.m5slow,&f.m5previous,&f.emaNow,&f.emaPrevious,&f.breakoutHigh,&f.breakoutLow,
                      &f.signal.open,&f.signal.high,&f.signal.low,&f.signal.close,
                      &f.pullback.open,&f.pullback.high,&f.pullback.low,&f.pullback.close}) *p=*p*scale+offset;
     f.atr*=scale;
     return f;
 }
-int Direction(const MSFeatures &f, int &reason) { return MSDirection(f,18,reason); }
+int Direction(const MSFeatures &f, int &reason, int &pattern, bool pullback=true, bool breakout=true) {
+    return MSDirection(f,16,pullback,breakout,reason,pattern);
+}
+int Direction(const MSFeatures &f, int &reason) { int pattern=-1; return Direction(f,reason,pattern); }
 void ExpectRejected(const MSFeatures &f, int expectedReason, const std::string &label) {
-    int reason=-1;
-    Check(Direction(f,reason)==0,label+" rejected");
+    int reason=-1,pattern=-1;
+    Check(Direction(f,reason,pattern)==0,label+" rejected");
     Check(reason==expectedReason,label+" reason");
+    Check(pattern==0,label+" no pattern");
     int mirroredReason=-1;
-    Check(Direction(Mirror(f),mirroredReason)==0,label+" SELL mirror rejected");
+    Check(Direction(Mirror(f),mirroredReason,pattern)==0,label+" SELL mirror rejected");
     Check(mirroredReason==expectedReason,label+" SELL mirror reason");
+    Check(pattern==0,label+" SELL mirror no pattern");
+}
+void ExpectSignal(const MSFeatures &f, int expectedPattern, bool pullback, bool breakout, const std::string &label) {
+    int reason=-1,pattern=-1;
+    Check(Direction(f,reason,pattern,pullback,breakout)==1,label+" BUY accepted");
+    Check(reason==0 && pattern==expectedPattern,label+" BUY pattern");
+    Check(Direction(Mirror(f),reason,pattern,pullback,breakout)==-1,label+" SELL accepted");
+    Check(reason==0 && pattern==expectedPattern,label+" SELL pattern");
 }
 void SignalFixtures() {
     int reason=-1;
     Check(Direction(BuyFixture(),reason)==1 && reason==0,"valid BUY fixture");
     Check(Direction(Mirror(BuyFixture()),reason)==-1 && reason==0,"valid mirrored SELL fixture");
-    auto f=BuyFixture(); f.adx=17.99; ExpectRejected(f,3,"weak ADX");
-    f=BuyFixture(); f.pullback.low=100.2; ExpectRejected(f,4,"no EMA pullback");
+    auto f=BuyFixture(); f.adx=15.99; ExpectRejected(f,3,"weak ADX");
+    f=BuyFixture(); f.pullback={100.35,100.6,100.3,100.4}; ExpectRejected(f,4,"no EMA pullback and no breakout");
     f=BuyFixture(); f.pullback.high=101.15; ExpectRejected(f,4,"no prior-high breakout");
     f=BuyFixture(); f.signal={100,103,99.9,102.9}; ExpectRejected(f,2,"oversized candle with strong body");
     f=BuyFixture(); f.signal.open=100.9; ExpectRejected(f,2,"weak candle body");
-    f=BuyFixture(); f.m15previous=f.m15fast; ExpectRejected(f,4,"flat M15 trend slope");
+    f=BuyFixture(); f.m5previous=f.m5fast; ExpectRejected(f,4,"flat M5 trend slope");
     f=BuyFixture(); f.diPlus=f.diMinus; ExpectRejected(f,4,"equal directional movement");
     f=BuyFixture(); f.m5fast=f.m5slow; ExpectRejected(f,4,"flat M5 trend");
     f=BuyFixture(); f.atr=0; ExpectRejected(f,1,"zero ATR");
     f=BuyFixture(); f.signal.high=f.signal.low; ExpectRejected(f,1,"zero-range signal");
     f=BuyFixture(); f.pullback.low=f.pullback.high+1; ExpectRejected(f,1,"malformed pullback range");
-    f=BuyFixture(); f.adx=18; Check(Direction(f,reason)==1,"ADX exactly at threshold accepted");
+    f=BuyFixture(); f.adx=16; Check(Direction(f,reason)==1,"ADX exactly at threshold accepted");
+    f=BuyFixture(); f.signal.close=f.signal.high+0.1; ExpectRejected(f,1,"close outside signal OHLC");
+    f=BuyFixture(); f.pullback.open=f.pullback.low-0.1; ExpectRejected(f,1,"open outside pullback OHLC");
+    f=BuyFixture(); f.breakoutHigh=f.breakoutLow-1; ExpectRejected(f,1,"inverted breakout levels");
+    f=BuyFixture(); f.breakoutHigh=100.8; f.signal={99.9,102,99.8,101};
+    ExpectRejected(f,4,"BUY close outside top35percent despite valid body and breakout");
+
+    // Pullback fixture deliberately does not clear the five-bar breakout level.
+    ExpectSignal(BuyFixture(),1,true,false,"pullback-only enabled");
+    ExpectSignal(BuyFixture(),1,true,true,"pullback independent of breakout");
+    int pattern=-1;
+    Check(Direction(BuyFixture(),reason,pattern,false,true)==0 && reason==4 && pattern==0,"disabled pullback cannot leak through breakout");
+    Check(Direction(Mirror(BuyFixture()),reason,pattern,false,true)==0 && reason==4 && pattern==0,"disabled SELL pullback cannot leak through breakout");
+
+    f=BuyFixture(); f.pullback={100.35,100.7,100.3,100.4}; f.breakoutHigh=100.8;
+    ExpectSignal(f,2,false,true,"breakout-only enabled without EMA touch");
+    ExpectSignal(f,2,true,true,"breakout independent of pullback");
+    Check(Direction(f,reason,pattern,true,false)==0 && reason==4 && pattern==0,"disabled breakout does not trigger pullback");
+    Check(Direction(Mirror(f),reason,pattern,true,false)==0 && reason==4 && pattern==0,"disabled SELL breakout does not trigger pullback");
+    Check(Direction(f,reason,pattern,false,false)==0 && reason==4 && pattern==0,"both disabled produce no entry");
+    Check(Direction(Mirror(f),reason,pattern,false,false)==0 && reason==4 && pattern==0,"both disabled produce no SELL entry");
+    f.emaNow=f.signal.close-1.6*f.atr;
+    ExpectRejected(f,4,"breakout too extended from EMA");
+    f=BuyFixture(); f.breakoutHigh=100.8;
+    ExpectSignal(f,1,true,true,"pullback takes precedence when both patterns pass");
+    ExpectSignal(f,2,false,true,"breakout selected when overlapping pullback disabled");
+    f=BuyFixture(); f.adx=-1; ExpectRejected(f,1,"negative ADX");
+    f=BuyFixture(); f.diPlus=-1; ExpectRejected(f,1,"negative directional indicator");
+    f=BuyFixture(); f.signal.low=0;
+    Check(Direction(f,reason,pattern)==0 && reason==1 && pattern==0,"nonpositive candle price invalid");
+    for (int field=0;field<6;++field) {
+        f=BuyFixture();
+        const std::array<double *,6> prices={&f.m5fast,&f.m5slow,&f.m5previous,&f.emaNow,&f.emaPrevious,&f.breakoutLow};
+        *prices[static_cast<std::size_t>(field)]=0;
+        Check(Direction(f,reason,pattern)==0 && reason==1 && pattern==0,"nonpositive indicator/level rejected");
+    }
     for (double invalid : {std::numeric_limits<double>::quiet_NaN(),
                            std::numeric_limits<double>::infinity(),-std::numeric_limits<double>::infinity()}) {
         f=BuyFixture(); f.atr=invalid; ExpectRejected(f,1,"nonfinite ATR");
         f=BuyFixture(); f.adx=invalid; ExpectRejected(f,1,"nonfinite ADX");
+        f=BuyFixture(); f.signal.close=invalid; ExpectRejected(f,1,"nonfinite OHLC");
+        Check(MSDirection(BuyFixture(),invalid,true,true,reason,pattern)==0 && reason==1 && pattern==0,"nonfinite ADX threshold invalid");
     }
 }
 void VolumeFixtures() {
@@ -135,17 +184,23 @@ void SignalProperties(std::mt19937_64 &rng) {
         Check(Direction(f,reason)==1,"affine-transformed BUY fixture accepted");
         Check(Direction(Mirror(f,5000),reason)==-1,"affine-transformed SELL fixture accepted");
         // Vary regimes/thresholds and pullbacks while retaining valid OHLC candles.
-        f.adx=18+perturb(rng)*4;
-        f.m15previous+=perturb(rng)*multiplier;
+        f.adx=16+perturb(rng)*4;
+        f.m5previous+=perturb(rng)*multiplier;
         f.m5fast+=perturb(rng)*multiplier;
         f.emaPrevious+=perturb(rng)*multiplier;
+        f.breakoutHigh+=perturb(rng)*multiplier;
         if (i%4==0) f.signal.open=f.signal.close-0.01*multiplier;
         if (i%7==0) f.atr*=0.2;
-        const int direction=Direction(f,reason);
-        const int opposite=Direction(Mirror(f,5000),mirrorReason);
+        int pattern=-1,mirrorPattern=-1;
+        const bool pullback=i%3!=0,breakout=i%5!=0;
+        const int direction=Direction(f,reason,pattern,pullback,breakout);
+        const int opposite=Direction(Mirror(f,5000),mirrorReason,mirrorPattern,pullback,breakout);
         Check(direction>=-1 && direction<=1,"direction is BUY/SELL/NONE only");
         Check(opposite==-direction,"BUY/SELL mirror symmetry across varied regimes");
         Check(reason==mirrorReason,"mirror retains rejection category");
+        Check(pattern==mirrorPattern,"mirror retains selected pattern");
+        Check(direction==0?pattern==0:(pattern==1||pattern==2),"signal pattern agrees with direction");
+        Check((pattern!=1||pullback) && (pattern!=2||breakout),"selected pattern respects independent toggles");
     }
 }
 } // namespace

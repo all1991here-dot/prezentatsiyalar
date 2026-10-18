@@ -1,19 +1,20 @@
 // EURUSD MicroSafe M1 Pro — experimental demo-first strategy, no promised win rate.
 #property strict
-#property version "1.00"
-#property description "Closed-bar M15/M5 trend, M1 pullback confirmation. Demo validation required."
+#property version "1.10"
+#property description "v1.10: M5 trend, M1 pullback OR breakout. No loss cooldown/session/streak blocks."
 #include <Trade/Trade.mqh>
 input ulong InpMagic=206101;
 input bool InpAllowRealAccount=false;
 input double InpRiskPercent=0.5;
 input double InpDailyLossPercent=2.0;
-input int InpMaxConsecutiveLosses=3;
-input int InpLossCooldownMinutes=60;
 input double InpMaxSpreadPips=1.2;
 input double InpMaxSpreadToStop=0.20;
 input double InpMinATRPips=0.8;
 input double InpMaxATRPips=8.0;
-input double InpMinADX=18.0;
+input double InpMinADX=16.0;
+input bool InpEnablePullback=true;
+input bool InpEnableBreakout=true;
+input int InpBreakoutLookback=5;
 input double InpMinStopPips=5.0;
 input double InpMaxStopPips=15.0;
 input double InpStopATR=1.5;
@@ -25,10 +26,6 @@ input double InpTrailATR=1.5;
 input double InpCommissionPerLot=7.0; // round trip, account currency / 1.0 lot; verify broker
 input double InpRiskReservePercent=10.0;
 input double InpFreeMarginReservePercent=20.0;
-input int InpStartHour=7; // broker server time, not local time
-input int InpEndHour=20; // flatten at end of session
-input int InpFridayStopHour=16;
-input int InpFridayCloseHour=19;
 input int InpDeviationPoints=5;
 input int InpMaxTickAgeSeconds=5;
 input int InpReconnectQuietSeconds=60;
@@ -40,33 +37,49 @@ input int InpEntryWindowSeconds=5;
 struct MSBar { double open; double high; double low; double close; };
 struct MSFeatures
 {
-   double m15fast,m15slow,m15previous;
-   double m5fast,m5slow,adx,diPlus,diMinus;
-   double emaNow,emaPrevious,atr;
+   double m5fast,m5slow,m5previous,adx,diPlus,diMinus;
+   double emaNow,emaPrevious,atr,breakoutHigh,breakoutLow;
    MSBar signal,pullback;
 };
-int MSDirection(const MSFeatures &f,double minADX,int &reason)
+bool MSValidBar(const MSBar &b)
 {
-   reason=0;
-   if(!MathIsValidNumber(f.atr) || !MathIsValidNumber(f.adx) || f.atr<=0 ||
-      f.signal.high<=f.signal.low || f.pullback.high<f.pullback.low)
+   return MathIsValidNumber(b.open) && MathIsValidNumber(b.high) &&
+      MathIsValidNumber(b.low) && MathIsValidNumber(b.close) && b.low>0 && b.high>b.low &&
+      b.open>=b.low && b.open<=b.high && b.close>=b.low && b.close<=b.high;
+}
+int MSDirection(const MSFeatures &f,double minADX,bool enablePullback,bool enableBreakout,int &reason,int &pattern)
+{
+   reason=0; pattern=0;
+   if(!MathIsValidNumber(f.atr) || !MathIsValidNumber(f.adx) || !MathIsValidNumber(minADX) ||
+      !MathIsValidNumber(f.m5fast) || !MathIsValidNumber(f.m5slow) || !MathIsValidNumber(f.m5previous) ||
+      !MathIsValidNumber(f.diPlus) || !MathIsValidNumber(f.diMinus) ||
+      !MathIsValidNumber(f.emaNow) || !MathIsValidNumber(f.emaPrevious) ||
+      !MathIsValidNumber(f.breakoutHigh) || !MathIsValidNumber(f.breakoutLow) ||
+      f.atr<=0 || f.adx<0 || f.diPlus<0 || f.diMinus<0 || f.m5fast<=0 || f.m5slow<=0 || f.m5previous<=0 ||
+      f.emaNow<=0 || f.emaPrevious<=0 || f.breakoutLow<=0 || f.breakoutHigh<f.breakoutLow ||
+      !MSValidBar(f.signal) || !MSValidBar(f.pullback))
    { reason=1; return 0; }
    double range=f.signal.high-f.signal.low;
-   if(MathAbs(f.signal.close-f.signal.open)<0.40*range || range>2.5*f.atr)
+   if(MathAbs(f.signal.close-f.signal.open)<0.35*range || range>2.5*f.atr)
    { reason=2; return 0; }
    if(f.adx<minADX) { reason=3; return 0; }
-   bool up=f.m15fast>f.m15slow && f.m15fast>f.m15previous &&
-      f.m5fast>f.m5slow && f.diPlus>f.diMinus;
-   bool down=f.m15fast<f.m15slow && f.m15fast<f.m15previous &&
-      f.m5fast<f.m5slow && f.diMinus>f.diPlus;
-   bool longEntry=f.pullback.low<=f.emaPrevious+0.15*f.atr &&
-      f.pullback.high>=f.emaPrevious-0.15*f.atr &&
-      f.signal.close>f.emaNow && f.signal.close>f.signal.open && f.signal.close>f.pullback.high;
-   bool shortEntry=f.pullback.high>=f.emaPrevious-0.15*f.atr &&
-      f.pullback.low<=f.emaPrevious+0.15*f.atr &&
-      f.signal.close<f.emaNow && f.signal.close<f.signal.open && f.signal.close<f.pullback.low;
-   if(up && longEntry) return 1;
-   if(down && shortEntry) return -1;
+   bool up=f.m5fast>f.m5slow && f.m5fast>f.m5previous && f.diPlus>f.diMinus;
+   bool down=f.m5fast<f.m5slow && f.m5fast<f.m5previous && f.diMinus>f.diPlus;
+   bool longCandle=f.signal.close>f.signal.open && f.signal.close>f.emaNow &&
+      f.signal.close>=f.signal.low+0.65*range;
+   bool shortCandle=f.signal.close<f.signal.open && f.signal.close<f.emaNow &&
+      f.signal.close<=f.signal.high-0.65*range;
+   bool touch=f.pullback.low<=f.emaPrevious+0.25*f.atr && f.pullback.high>=f.emaPrevious-0.25*f.atr;
+   if(enablePullback && touch)
+   {
+      if(up && longCandle && f.signal.close>f.pullback.high) { pattern=1; return 1; }
+      if(down && shortCandle && f.signal.close<f.pullback.low) { pattern=1; return -1; }
+   }
+   if(enableBreakout && MathAbs(f.signal.close-f.emaNow)<=1.5*f.atr)
+   {
+      if(up && longCandle && f.signal.close>f.breakoutHigh) { pattern=2; return 1; }
+      if(down && shortCandle && f.signal.close<f.breakoutLow) { pattern=2; return -1; }
+   }
    reason=4; return 0;
 }
 double MSVolume(double budget,double minLotLoss,double vmin,double vmax,double step)
@@ -83,17 +96,15 @@ double MSVolume(double budget,double minLotLoss,double vmin,double vmax,double s
 // END PORTABLE LOGIC
 
 CTrade trade;
-int h15fast=INVALID_HANDLE,h15slow=INVALID_HANDLE,h5fast=INVALID_HANDLE,h5slow=INVALID_HANDLE;
+int h5fast=INVALID_HANDLE,h5slow=INVALID_HANDLE;
 int h5adx=INVALID_HANDLE,h1ema=INVALID_HANDLE,h1atr=INVALID_HANDLE;
 int lockHandle=INVALID_HANDLE;
 string key;
 double pip=0;
 bool durable=true,connected=false,historyDirty=true,tester=false;
 datetime lastBar=0,lastTick=0,quietUntil=0,lastAction=0,lastHistory=0,lastHistoryDay=0;
-datetime lastLoss=0;
-int lossStreak=0;
 double dayNet=0,dayCash=0;
-ulong rejects[16]; ulong signalsBuy=0,signalsSell=0,entryAttempts=0;
+ulong rejects[16]; ulong signalsBuy=0,signalsSell=0,entryAttempts=0,pullbackSignals=0,breakoutSignals=0;
 
 void Log(string text) { Print("[MicroSafe M1] ",text); }
 string K(string name) { return key+name; }
@@ -143,11 +154,6 @@ bool OwnSelected()
 {
    return PositionGetString(POSITION_SYMBOL)==_Symbol && (ulong)PositionGetInteger(POSITION_MAGIC)==InpMagic;
 }
-bool OwnOpen()
-{
-   for(int i=PositionsTotal()-1;i>=0;i--) if(PositionGetTicket(i)>0 && OwnSelected()) return true;
-   return false;
-}
 bool Exposure() { return PositionsTotal()>0 || OrdersTotal()>0; }
 string PositionKey(string field,ulong id) { return field+StringFormat("%I64u",id); }
 void Latch(string why)
@@ -186,13 +192,13 @@ void CloseOwn(string why)
    }
 }
 
-// Reconstruct complete EA position lifecycles. Refresh on transactions/reconnect,
-// once per minute, and at initialization. Entry and all exit fees are included.
+// Refresh daily account P/L and reconcile uncertain entry intents.
+// No last-loss timestamp or loss-streak gate exists in v1.10.
 bool RefreshHistory()
 {
    if(!historyDirty && lastHistoryDay==Midnight(TimeCurrent()) && TimeCurrent()-lastHistory<60) return true;
    if(!HistorySelect(0,TimeCurrent())) return false;
-   ulong ids[]; double pnls[]; datetime exits[]; bool closed[];
+   ulong ids[];
    datetime today=Midnight(TimeCurrent()); dayNet=0; dayCash=0;
    bool intentResolved=false;
    for(int i=0;i<HistoryDealsTotal();i++)
@@ -218,33 +224,14 @@ bool RefreshHistory()
       if(ix<0)
       {
          if(entry!=DEAL_ENTRY_IN) { Log("Owned exit without entry: incomplete history"); return false; }
-         ix=ArraySize(ids); ArrayResize(ids,ix+1); ArrayResize(pnls,ix+1); ArrayResize(exits,ix+1); ArrayResize(closed,ix+1);
-         ids[ix]=id; pnls[ix]=0; exits[ix]=0; closed[ix]=false;
+         ix=ArraySize(ids); ArrayResize(ids,ix+1); ids[ix]=id;
       }
-      pnls[ix]+=net;
-      if(entry==DEAL_ENTRY_OUT || entry==DEAL_ENTRY_OUT_BY) { exits[ix]=when; closed[ix]=true; }
       if(magic && entry==DEAL_ENTRY_IN && Has("intentTime") && when>=(datetime)Get("intentTime") && Get("intentTime")>0)
       {
          ulong order=(ulong)HistoryDealGetInteger(deal,DEAL_ORDER);
          string comment=HistoryDealGetString(deal,DEAL_COMMENT),expected=IntentComment();
          if((IntentOrder()>0 && order==IntentOrder()) || (expected!="" && comment==expected)) intentResolved=true;
       }
-   }
-   for(int i=0;i<ArraySize(ids);i++)
-      for(int j=PositionsTotal()-1;j>=0;j--)
-         if(PositionGetTicket(j)>0 && (ulong)PositionGetInteger(POSITION_IDENTIFIER)==ids[i]) { closed[i]=false; break; }
-   lastLoss=0; lossStreak=0;
-   for(int i=0;i<ArraySize(ids);i++) if(closed[i] && pnls[i]<-1e-8) lastLoss=(datetime)MathMax(lastLoss,exits[i]);
-   // Consume a separate flag; never mutate exit times used for cooldown.
-   bool consumed[]; ArrayResize(consumed,ArraySize(ids)); for(int i=0;i<ArraySize(consumed);i++) consumed[i]=false;
-   while(true)
-   {
-      int latest=-1;
-      for(int i=0;i<ArraySize(ids);i++)
-         if(closed[i] && !consumed[i] && exits[i]>=today && (latest<0 || exits[i]>exits[latest])) latest=i;
-      if(latest<0) break;
-      if(pnls[latest]>=-1e-8) break;
-      lossStreak++; consumed[latest]=true;
    }
    if(intentResolved && Has("pending") && Get("pending")!=0) { Put("pending",0); GlobalVariablesFlush(); Log("Entry intent reconciled with broker deal history"); }
    historyDirty=false; lastHistory=TimeCurrent(); lastHistoryDay=today; return true;
@@ -256,7 +243,6 @@ bool DailyRisk()
    bool initialized=Has("day");
    if(!initialized || (datetime)Get("day")!=day)
    {
-      if(initialized && OwnOpen()) { CloseOwn("Overnight position: flatten before resetting day"); return false; }
       // Balance minus today's account-wide trading result reconstructs the day
       // opening balance (adjusted for cash transfers). No fabricated midnight equity.
       double base=AccountInfoDouble(ACCOUNT_BALANCE)-dayNet;
@@ -268,7 +254,6 @@ bool DailyRisk()
    if(!Has("base") || !Has("cash") || !Has("halt") || Get("base")<=0) { durable=false; return false; }
    if(MathAbs(dayCash-Get("cash"))>0.000001) Latch("cash transfer detected; no trading until next server day");
    if(RiskEquity()<=Get("base")*(1-InpDailyLossPercent/100.0)) Latch("account daily loss threshold");
-   if(lossStreak>=InpMaxConsecutiveLosses) Latch("daily consecutive loss threshold");
    return durable && Get("halt")==0;
 }
 
@@ -302,7 +287,8 @@ void Manage(const MqlTick &tick)
       double cap=Get(PositionKey("C",id)),r=Get(PositionKey("R",id)),loss=0;
       ENUM_ORDER_TYPE type=buy?ORDER_TYPE_BUY:ORDER_TYPE_SELL;
       if(!OrderCalcProfit(type,_Symbol,volume,entry,sl,loss)) { CloseOwn("EMERGENCY: cannot audit actual position risk"); return; }
-      double actualRisk=(MathMax(0,-loss)+InpCommissionPerLot*volume)*(1+InpRiskReservePercent/100.0);
+      double negativeSwap=MathMax(0,-PositionGetDouble(POSITION_SWAP));
+      double actualRisk=(MathMax(0,-loss)+negativeSwap+InpCommissionPerLot*volume)*(1+InpRiskReservePercent/100.0);
       if(actualRisk>cap+0.01) { Latch("actual fill risk exceeded budget"); CloseOwn("EMERGENCY: fill risk beyond reserved cap"); return; }
       if(!ready || atr<=0 || TimeCurrent()-lastAction<5) continue;
       double price=buy?tick.bid:tick.ask,gain=buy?price-entry:entry-price;
@@ -337,32 +323,36 @@ void Evaluate(const MqlTick &tick)
    if(Has("pending") && Get("pending")!=0) { Reject(0,"unresolved earlier entry; broker reconciliation required, no retry"); return; }
    if(!tester && (!TerminalInfoInteger(TERMINAL_TRADE_ALLOWED) || !MQLInfoInteger(MQL_TRADE_ALLOWED))) { Reject(0,"terminal/EA automated trading permission disabled"); return; }
    if(!AccountInfoInteger(ACCOUNT_TRADE_ALLOWED) || !AccountInfoInteger(ACCOUNT_TRADE_EXPERT)) { Reject(0,"account trading disabled"); return; }
-   if(!DailyRisk()) { Reject(1,"history/daily/streak safety block"); return; }
+   if(!DailyRisk()) { Reject(1,"history/daily safety block"); return; }
    if(Exposure()) { Reject(2,"account position or pending order already exists"); return; }
-   MqlDateTime now; TimeToStruct(TimeCurrent(),now);
-   if(now.day_of_week==0 || now.day_of_week==6 || now.hour<InpStartHour || now.hour>=InpEndHour ||
-      (now.day_of_week==5 && now.hour>=InpFridayStopHour)) { Reject(3,"server-time session/Friday filter"); return; }
-   if(lastLoss>0 && TimeCurrent()-lastLoss<InpLossCooldownMinutes*60) { Reject(4,"60-minute loss cooldown"); return; }
    double spread=(tick.ask-tick.bid)/pip;
    if(spread>InpMaxSpreadPips) { Reject(5,StringFormat("spread %.2f > %.2f pips",spread,InpMaxSpreadPips)); return; }
-   if(!SeriesInfoInteger(_Symbol,PERIOD_M1,SERIES_SYNCHRONIZED) || !SeriesInfoInteger(_Symbol,PERIOD_M5,SERIES_SYNCHRONIZED) ||
-      !SeriesInfoInteger(_Symbol,PERIOD_M15,SERIES_SYNCHRONIZED) || BarsCalculated(h15slow)<205)
-   { Reject(6,"M1/M5/M15 history/EMA warmup unavailable"); return; }
+   if(!SeriesInfoInteger(_Symbol,PERIOD_M1,SERIES_SYNCHRONIZED) ||
+      !SeriesInfoInteger(_Symbol,PERIOD_M5,SERIES_SYNCHRONIZED) || BarsCalculated(h5slow)<55 ||
+      BarsCalculated(h5fast)<23 || BarsCalculated(h5adx)<30 || BarsCalculated(h1ema)<22 || BarsCalculated(h1atr)<16)
+   { Reject(6,"M1/M5 history/EMA warmup unavailable"); return; }
    MSFeatures f;
-   if(!Value(h15fast,0,1,f.m15fast) || !Value(h15fast,0,3,f.m15previous) || !Value(h15slow,0,1,f.m15slow) ||
-      !Value(h5fast,0,1,f.m5fast) || !Value(h5slow,0,1,f.m5slow) || !Value(h5adx,0,1,f.adx) ||
-      !Value(h5adx,1,1,f.diPlus) || !Value(h5adx,2,1,f.diMinus) || !Value(h1ema,0,1,f.emaNow) ||
-      !Value(h1ema,0,2,f.emaPrevious) || !Value(h1atr,0,1,f.atr)) { Reject(6,"closed-bar indicator buffers unavailable"); return; }
+   if(!Value(h5fast,0,1,f.m5fast) || !Value(h5fast,0,3,f.m5previous) || !Value(h5slow,0,1,f.m5slow) ||
+      !Value(h5adx,0,1,f.adx) || !Value(h5adx,1,1,f.diPlus) || !Value(h5adx,2,1,f.diMinus) ||
+      !Value(h1ema,0,1,f.emaNow) || !Value(h1ema,0,2,f.emaPrevious) || !Value(h1atr,0,1,f.atr))
+   { Reject(6,"closed-bar indicator buffers unavailable"); return; }
    if(f.atr/pip<InpMinATRPips || f.atr/pip>InpMaxATRPips) { Reject(7,StringFormat("M1 ATR %.2f pips outside range",f.atr/pip)); return; }
    MqlRates bars[]; ArraySetAsSeries(bars,true);
-   if(CopyRates(_Symbol,PERIOD_M1,1,5,bars)!=5) { Reject(6,"M1 bars unavailable"); return; }
+   int count=(int)MathMax(5,InpBreakoutLookback+1);
+   if(CopyRates(_Symbol,PERIOD_M1,1,count,bars)!=count) { Reject(6,"M1 bars unavailable"); return; }
+   // bars[0] is the signal. Breakout levels exclude it, preventing lookahead/self-reference.
+   f.breakoutHigh=bars[1].high; f.breakoutLow=bars[1].low;
+   for(int i=2;i<=InpBreakoutLookback;i++)
+   { f.breakoutHigh=MathMax(f.breakoutHigh,bars[i].high); f.breakoutLow=MathMin(f.breakoutLow,bars[i].low); }
    f.signal.open=bars[0].open; f.signal.high=bars[0].high; f.signal.low=bars[0].low; f.signal.close=bars[0].close;
    f.pullback.open=bars[1].open; f.pullback.high=bars[1].high; f.pullback.low=bars[1].low; f.pullback.close=bars[1].close;
-   int why=0,direction=MSDirection(f,InpMinADX,why);
-   if(direction==0) { Reject(8,StringFormat("NO SIGNAL rule=%d (1 invalid bars, 2 candle, 3 ADX, 4 trend/pullback/breakout)",why)); return; }
+   int why=0,pattern=0;
+   int direction=MSDirection(f,InpMinADX,InpEnablePullback,InpEnableBreakout,why,pattern);
+   if(direction==0) { Reject(8,StringFormat("NO SIGNAL rule=%d (1 invalid bars, 2 candle, 3 ADX, 4 M5 direction or M1 entry)",why)); return; }
    bool buy=direction>0;
    if(buy) signalsBuy++; else signalsSell++;
-   Log(StringFormat("SIGNAL %s: ADX=%.1f ATR=%.2f pips spread=%.2f pips; rule outcome, NOT a win probability",buy?"BUY":"SELL",f.adx,f.atr/pip,spread));
+   if(pattern==1) pullbackSignals++; else if(pattern==2) breakoutSignals++;
+   Log(StringFormat("SIGNAL %s %s: ADX=%.1f ATR=%.2f pips spread=%.2f pips; rule outcome, NOT a win probability",buy?"BUY":"SELL",pattern==1?"PULLBACK":"BREAKOUT",f.adx,f.atr/pip,spread));
    // Signal candles are Bid bars for both directions; never compare ask to Bid close.
    if(MathAbs(tick.bid-bars[0].close)>0.5*f.atr) { Reject(9,"signal price moved >0.5 ATR"); return; }
    long mode=SymbolInfoInteger(_Symbol,SYMBOL_TRADE_MODE),flags=SymbolInfoInteger(_Symbol,SYMBOL_ORDER_MODE);
@@ -421,13 +411,12 @@ void Evaluate(const MqlTick &tick)
 int OnInit()
 {
    if(InpRiskPercent<=0 || InpRiskPercent>1 || InpDailyLossPercent<=0 || InpDailyLossPercent>2 ||
-      InpMaxConsecutiveLosses<1 || InpMaxConsecutiveLosses>3 || InpLossCooldownMinutes<60 || InpMaxSpreadPips<=0 ||
+      InpMaxSpreadPips<=0 || (!InpEnablePullback && !InpEnableBreakout) || InpBreakoutLookback<2 || InpBreakoutLookback>20 ||
       InpMaxSpreadToStop<=0 || InpMaxSpreadToStop>0.3 || InpMinATRPips<=0 || InpMaxATRPips<=InpMinATRPips || InpMinADX<0 ||
       InpMinStopPips<=0 || InpMaxStopPips<InpMinStopPips || InpStopATR<=0 || InpRewardRisk<1 ||
       InpBreakEvenR<=0 || InpBreakEvenOffsetPips<0 || InpTrailStartR<InpBreakEvenR || InpTrailATR<=0 ||
       InpCommissionPerLot<0 || InpRiskReservePercent<0 || InpFreeMarginReservePercent<0 || InpFreeMarginReservePercent>=100 ||
-      InpStartHour<0 || InpEndHour>23 || InpStartHour>=InpEndHour || InpFridayStopHour<0 || InpFridayCloseHour>23 ||
-      InpFridayStopHour>InpFridayCloseHour || InpDeviationPoints<0 || InpMaxTickAgeSeconds<1 ||
+      InpDeviationPoints<0 || InpMaxTickAgeSeconds<1 ||
       InpReconnectQuietSeconds<1 || InpEntryWindowSeconds<1 || InpEntryWindowSeconds>10 || InpMagic==0)
    { Log("INIT FAILED: invalid safety inputs"); return INIT_PARAMETERS_INCORRECT; }
    tester=(bool)MQLInfoInteger(MQL_TESTER);
@@ -452,10 +441,9 @@ int OnInit()
       if(PositionGetTicket(i)>0 && !OwnSelected())
       { Log("INIT FAILED: foreign symbol/magic position; restore its original EA/inputs, do not mix accounts"); return INIT_FAILED; }
    if(Has("day") && (!Has("base") || !Has("halt") || !Has("cash"))) { Log("INIT FAILED: partial durable day state; reconcile before use"); return INIT_FAILED; }
-   h15fast=iMA(_Symbol,PERIOD_M15,50,0,MODE_EMA,PRICE_CLOSE); h15slow=iMA(_Symbol,PERIOD_M15,200,0,MODE_EMA,PRICE_CLOSE);
    h5fast=iMA(_Symbol,PERIOD_M5,20,0,MODE_EMA,PRICE_CLOSE); h5slow=iMA(_Symbol,PERIOD_M5,50,0,MODE_EMA,PRICE_CLOSE);
    h5adx=iADX(_Symbol,PERIOD_M5,14); h1ema=iMA(_Symbol,PERIOD_M1,20,0,MODE_EMA,PRICE_CLOSE); h1atr=iATR(_Symbol,PERIOD_M1,14);
-   if(h15fast==INVALID_HANDLE || h15slow==INVALID_HANDLE || h5fast==INVALID_HANDLE || h5slow==INVALID_HANDLE ||
+   if(h5fast==INVALID_HANDLE || h5slow==INVALID_HANDLE ||
       h5adx==INVALID_HANDLE || h1ema==INVALID_HANDLE || h1atr==INVALID_HANDLE) { Log("INIT FAILED: indicator handles"); return INIT_FAILED; }
    trade.SetExpertMagicNumber(InpMagic); trade.SetDeviationInPoints(InpDeviationPoints); trade.SetAsyncMode(false);
    if(!trade.SetTypeFillingBySymbol(_Symbol)) { Log("INIT FAILED: broker filling policy"); return INIT_FAILED; }
@@ -463,7 +451,9 @@ int OnInit()
    connected=tester || (bool)TerminalInfoInteger(TERMINAL_CONNECTED);
    if(!EventSetTimer(5)) { Log("INIT FAILED: timer"); return INIT_FAILED; }
    if(!DailyRisk()) Log("Initialized in safety-block state; see history/daily/pending diagnostics");
-   Log(StringFormat("Initialized: M1 signals, M5/M15 context; contract=%.2f minlot=%.8f step=%.8f currency=%s; no 80%% guarantee",
+   if(Has("halt") && Get("halt")!=0)
+      Log("Persisted account safety halt retained until next server day; legacy reason may be unknown. No automatic clearing on upgrade.");
+   Log(StringFormat("Initialized v1.10: M5 trend, M1 dual entry; no session/cooldown/streak blocks; contract=%.2f minlot=%.8f step=%.8f currency=%s; no 80%% guarantee",
       SymbolInfoDouble(_Symbol,SYMBOL_TRADE_CONTRACT_SIZE),SymbolInfoDouble(_Symbol,SYMBOL_VOLUME_MIN),SymbolInfoDouble(_Symbol,SYMBOL_VOLUME_STEP),AccountInfoString(ACCOUNT_CURRENCY)));
    return durable?INIT_SUCCEEDED:INIT_FAILED;
 }
@@ -489,10 +479,7 @@ void OnTick()
    { quietUntil=TimeCurrent()+InpReconnectQuietSeconds; lastBar=iTime(_Symbol,PERIOD_M1,0); historyDirty=true; connected=true; Log("Reconnect/tick gap: old signal discarded"); }
    lastTick=tick.time;
    bool safe=DailyRisk();
-   MqlDateTime now; TimeToStruct(TimeCurrent(),now);
    if(!safe) CloseOwn("Daily/history/state safety close");
-   else if(now.hour>=InpEndHour || now.hour<InpStartHour || (now.day_of_week==5 && now.hour>=InpFridayCloseHour) || now.day_of_week==6 || now.day_of_week==0)
-      CloseOwn("Session/Friday mandatory exit");
    else Manage(tick);
    datetime bar=iTime(_Symbol,PERIOD_M1,0);
    if(bar==0 || bar==lastBar) return;
@@ -515,8 +502,6 @@ void OnTradeTransaction(const MqlTradeTransaction &tx,const MqlTradeRequest &req
 void OnDeinit(const int reason)
 {
    EventKillTimer();
-   if(h15fast!=INVALID_HANDLE) IndicatorRelease(h15fast);
-   if(h15slow!=INVALID_HANDLE) IndicatorRelease(h15slow);
    if(h5fast!=INVALID_HANDLE) IndicatorRelease(h5fast);
    if(h5slow!=INVALID_HANDLE) IndicatorRelease(h5slow);
    if(h5adx!=INVALID_HANDLE) IndicatorRelease(h5adx);
@@ -524,6 +509,6 @@ void OnDeinit(const int reason)
    if(h1atr!=INVALID_HANDLE) IndicatorRelease(h1atr);
    if(lockHandle!=INVALID_HANDLE) FileClose(lockHandle);
    GlobalVariablesFlush();
-   Log(StringFormat("SUMMARY signals BUY=%I64u SELL=%I64u entryAttempts=%I64u",signalsBuy,signalsSell,entryAttempts));
+   Log(StringFormat("SUMMARY v1.10 signals BUY=%I64u SELL=%I64u PULLBACK=%I64u BREAKOUT=%I64u entryAttempts=%I64u",signalsBuy,signalsSell,pullbackSignals,breakoutSignals,entryAttempts));
    for(int i=0;i<16;i++) if(rejects[i]>0) Log(StringFormat("SUMMARY rejectionCategory=%d count=%I64u",i,rejects[i]));
 }
