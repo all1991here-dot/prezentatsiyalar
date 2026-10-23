@@ -1,5 +1,8 @@
 # UniGuide — LOBM404 laboratoriya loyihasi
 
+**L4 uchun yangi:** [rasmlar va bosqichlar bilan amaliy loyiha](L4_amaliy_loyiha/) · [Word qo‘llanma](Dars_materiallari/L4_rasmli_amaliy_qollanma.docx) · [ZIP paket](Dars_materiallari/L4_amaliy_loyiha.zip).
+
+
 **Loyihalarni boshqarish**, 2026–2027. Sillabusdagi15 laboratoriya bitta mahsulotga bog‘langan: yangi talabalarga6 asosiy yo‘nalishda yo‘l ko‘rsatadigan UniGuide.
 
 ## O‘qituvchi qo‘llanmasi

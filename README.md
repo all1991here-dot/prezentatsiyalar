@@ -2,6 +2,13 @@
 
 ## Yangi fan: Loyihalarni boshqarish — LOBM404
 
+### L4 — WIP bo‘yicha rasmli amaliy loyiha
+
+**[Bosqichma-bosqich qo‘llanma va 6 ta rasm](LOBM404_UniGuide/L4_amaliy_loyiha/)** · **[Word qo‘llanma](LOBM404_UniGuide/Dars_materiallari/L4_rasmli_amaliy_qollanma.docx)** · **[ZIP paket](LOBM404_UniGuide/Dars_materiallari/L4_amaliy_loyiha.zip)**
+
+Brauzerda ochiladigan 6 bosqichli o‘quv mashqi, 9 karta, WIP limitlari, tiqilish tahlili va talabalar uchun shablonlar. Rasmlar o‘quv simulyatoriga tegishli; GitHub Projects doskasini yaratish tartibi qo‘llanmada berilgan.
+
+
 **[15 laboratoriya uchun rasmli Word qo‘llanma — 86 sahifa](https://github.com/all1991here-dot/prezentatsiyalar/raw/refs/heads/main/LOBM404_UniGuide/Qollanma/LOBM404_15_laboratoriya_qollanma.docx)**
 
 Bitta **UniGuide** loyihasi,15 talaba shabloni,15 to‘ldirilgan namuna, ishlaydigan Python ilovasi va testlar: **[LOBM404_UniGuide papkasi](LOBM404_UniGuide/)**.
