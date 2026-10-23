@@ -2,6 +2,8 @@
 
 ## Yangi fan: Loyihalarni boshqarish — LOBM404
 
+**[Gitga kirish va Windowsga o‘rnatish — o‘zbekcha rasmli Word qo‘llanmalar](LOBM404_UniGuide/Dars_materiallari/Git_asoslari/)**
+
 ### L4 — WIP bo‘yicha rasmli amaliy loyiha
 
 **[Bosqichma-bosqich qo‘llanma va 6 ta rasm](LOBM404_UniGuide/L4_amaliy_loyiha/)** · **[Word qo‘llanma](LOBM404_UniGuide/Dars_materiallari/L4_rasmli_amaliy_qollanma.docx)** · **[ZIP paket](LOBM404_UniGuide/Dars_materiallari/L4_amaliy_loyiha.zip)**
