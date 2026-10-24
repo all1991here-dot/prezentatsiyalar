@@ -2,6 +2,8 @@
 
 ## Yangi fan: Loyihalarni boshqarish — LOBM404
 
+**[Git bo‘yicha 2–15-darslar: 14 ta sodda rasmli Word qo‘llanma](LOBM404_UniGuide/Dars_materiallari/Git_asoslari/2_15_darslar/)** · **[Barcha darslarni ZIP qilib olish](https://github.com/all1991here-dot/prezentatsiyalar/raw/refs/heads/main/LOBM404_UniGuide/Dars_materiallari/Git_asoslari/Git_2_15_darslar_UZ.zip)**
+
 **[Gitga kirish va Windowsga o‘rnatish — o‘zbekcha rasmli Word qo‘llanmalar](LOBM404_UniGuide/Dars_materiallari/Git_asoslari/)**
 
 ### L4 — WIP bo‘yicha rasmli amaliy loyiha

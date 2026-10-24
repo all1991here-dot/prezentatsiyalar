@@ -1,5 +1,12 @@
 # Git asoslari — o‘zbekcha Word qo‘llanmalar
 
+## 2–15-darslarning to‘liq yangi to‘plami
+
+**[Darslar ro‘yxati va alohida Word fayllari](2_15_darslar/)** · **[14 ta qo‘llanmani ZIP qilib yuklab olish](https://github.com/all1991here-dot/prezentatsiyalar/raw/refs/heads/main/LOBM404_UniGuide/Dars_materiallari/Git_asoslari/Git_2_15_darslar_UZ.zip)**
+
+O‘qituvchi tushuntiradigan sodda uslub, 55 ta rasm, savol-javob va birga bajariladigan mashqlar. Har darsning qismlari birlashtirilgan.
+
+
 ## O‘qituvchi talabalarga sodda tilda tushuntiradigan yangi variant
 
 - **[Ikkala dars — “Gitni birga o‘rganamiz”](Git_kirish_va_ornatish_sodda_UZ.docx)**
